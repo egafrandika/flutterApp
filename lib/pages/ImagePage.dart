@@ -1,8 +1,10 @@
 import 'dart:io';
+
 import 'package:dismissible_page/dismissible_page.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart';
 
 class ImagePage extends StatelessWidget {
   final String tag;
@@ -22,30 +24,62 @@ class ImagePage extends StatelessWidget {
       imagePath = '';
     }
 
-    final downloadUrl = 'https://example.com/images/secondTab/$tag.jpeg'; // Replace with the actual URL of the image
+    final downloadUrl ='https://example.com/images/$tag.jpeg'; // Replace with the actual URL of the image
 
-    final response = await http.get(Uri.parse(downloadUrl));
-    final bytes = response.bodyBytes;
+    final status = await Permission.manageExternalStorage.request();
 
-    await File(imagePath).writeAsBytes(bytes);
+    if (status.isGranted) {
+      try {
+        final response = await http.get(Uri.parse(downloadUrl));
+        print('testing response:${response.statusCode}');
+        print('Downloaded image length: ${response.bodyBytes.length}');
+        final bytes = response.bodyBytes;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Gambar Diunduh'),
-      ),
-    );
+        await File(imagePath).writeAsBytes(bytes);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Image Downloaded'),
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to download image.'),
+          ),
+        );
+      }
+    } else if (status.isPermanentlyDenied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Permission not granted'),
+          action: SnackBarAction(
+            label: 'Open Settings',
+            onPressed: () {
+              openAppSettings();
+            },
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Permission denied'),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-  String imagePath;
-  if (imageUrl.contains('firstTab')) {
-  imagePath = 'images/firstTab/$tag.jpg';
-  } else if (imageUrl.contains('secondTab')) {
-    imagePath = 'images/secondTab/$tag.jpeg';
-  } else {
-    imagePath = '';
-  }
+    String imagePath;
+    if (imageUrl.contains('firstTab')) {
+      imagePath = 'images/firstTab/$tag.jpg';
+    } else if (imageUrl.contains('secondTab')) {
+      imagePath = 'images/secondTab/$tag.jpeg';
+    } else {
+      imagePath = '';
+    }
     return Scaffold(
       extendBody: true,
       body: DismissiblePage(
@@ -87,7 +121,7 @@ class ImagePage extends StatelessWidget {
                         color: Colors.white,
                         size: 40,
                       ),
-                    )
+                    ),
                   ),
                   Padding(
                     padding: EdgeInsets.all(10),
