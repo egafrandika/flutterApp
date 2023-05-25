@@ -1,51 +1,54 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dismissible_page/dismissible_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 
 class ImagePage extends StatelessWidget {
   final String tag;
-  final String imageUrl;
+  final String assetPath;
 
-  ImagePage({required this.tag, required this.imageUrl});
+  ImagePage({required this.tag, required this.assetPath});
 
   Future<void> _downloadImage(BuildContext context) async {
-    final directory = await getExternalStorageDirectory();
-    String imagePath;
+    String _status;
+    try{
+      final ByteData imageBytes = await rootBundle.load(assetPath);
+      final List<int> bytes = imageBytes.buffer.asUint8List();
+      final directory = await getExternalStorageDirectory();
+      final filePath = '${directory!.path}/${assetPath.split('/').last}';
 
-    if (imageUrl.contains('firstTab')) {
-      imagePath = '${directory!.path}/$tag.jpg';
-    } else if (imageUrl.contains('secondTab')) {
-      imagePath = '${directory!.path}/$tag.jpeg';
-    } else {
-      imagePath = '';
+      await File(filePath).writeAsBytes(bytes);
+      bool fileExists = await File(filePath).exists();
+      if(fileExists){
+        _status = "Download Complete";
+      }
+      else{
+        _status = "Download Failed";
+      }
     }
-
-    final downloadUrl = 'https://example.com/images/secondTab/$tag.jpeg'; // Replace with the actual URL of the image
-
-    final response = await http.get(Uri.parse(downloadUrl));
-    final bytes = response.bodyBytes;
-
-    await File(imagePath).writeAsBytes(bytes);
-
+    catch(e){
+      _status = "Error: $e";
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Gambar Diunduh'),
+        content: Text(_status),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-  String imagePath;
-  if (imageUrl.contains('firstTab')) {
-  imagePath = 'images/firstTab/$tag.jpg';
-  } else if (imageUrl.contains('secondTab')) {
-    imagePath = 'images/secondTab/$tag.jpeg';
-  } else {
-    imagePath = '';
-  }
+    String imagePath;
+    if (assetPath.contains('firstTab')) {
+      imagePath = 'images/firstTab/$tag.jpg';
+    } else if (assetPath.contains('secondTab')) {
+      imagePath = 'images/secondTab/$tag.jpeg';
+    } else {
+      imagePath = '';
+    }
     return Scaffold(
       extendBody: true,
       body: DismissiblePage(
@@ -79,15 +82,15 @@ class ImagePage extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.all(10),
-                    child: GestureDetector(
-                      onTap: () => _downloadImage(context),
-                      child: Icon(
-                        Icons.download,
-                        color: Colors.white,
-                        size: 40,
-                      ),
-                    )
+                      padding: EdgeInsets.all(10),
+                      child: GestureDetector(
+                        onTap: () => _downloadImage(context),
+                        child: Icon(
+                          Icons.download,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      )
                   ),
                   Padding(
                     padding: EdgeInsets.all(10),

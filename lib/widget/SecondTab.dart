@@ -26,7 +26,7 @@ class SecondTab extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => ImagePage(
                       tag: "wallpaper$i",
-                      imageUrl: 'images/secondTab/wallpaper$i.jpeg',
+                      assetPath: 'images/secondTab/wallpaper$i.jpeg',
                     ),
                   ),
                 );
